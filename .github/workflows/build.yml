@@ -1,117 +1,117 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+ push:
+ branches: [ main, develop ]
+ pull_request:
+ branches: [ main ]
 
 jobs:
-  build_debug:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.16.0'
-          channel: 'stable'
-          
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            **/pubspec.lock
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
-            
-      - name: Install dependencies
-        run: flutter pub get
-        
-      - name: Build Android Debug APK
-        run: flutter build apk --debug
-        
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: debug-apk
-          path: build/app/outputs/flutter-apk/debug/app-debug.apk
+ build_debug:
+ runs-on: ubuntu-latest
+ 
+ steps:
+ - name: Checkout repository
+ uses: actions/checkout@v4
+ 
+ - name: Set up Flutter
+ uses: subosito/flutter-action@v2
+ with:
+ flutter-version: '3.16.0'
+ channel: 'stable'
+ 
+ - name: Cache Flutter dependencies
+ uses: actions/cache@v3
+ with:
+ path: |
+ ~/.pub-cache
+ **/pubspec.lock
+ key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
+ restore-keys: |
+ ${{ runner.os }}-flutter-
+ 
+ - name: Install dependencies
+ run: flutter pub get
+ 
+ - name: Build Android Debug APK
+ run: flutter build apk --debug
+ 
+ - name: Upload Debug APK
+ uses: actions/upload-artifact@v4
+ with:
+ name: debug-apk
+ path: build/app/outputs/flutter-apk/debug/app-debug.apk
 
-  build_release:
-    runs-on: ubuntu-latest
-    needs: build_debug
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.16.0'
-          channel: 'stable'
-          
-      - name: Cache Flutter dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.pub-cache
-            **/pubspec.lock
-          key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-flutter-
-            
-      - name: Install dependencies
-        run: flutter pub get
-        
-      - name: Build Android Release APK
-        run: flutter build apk --release
-        
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: release-apk
-          path: build/app/outputs/flutter-apk/release/app-release.apk
+ build_release:
+ runs-on: ubuntu-latest
+ needs: build_debug
+ 
+ steps:
+ - name: Checkout repository
+ uses: actions/checkout@v4
+ 
+ - name: Set up Flutter
+ uses: subosito/flutter-action@v2
+ with:
+ flutter-version: '3.16.0'
+ channel: 'stable'
+ 
+ - name: Cache Flutter dependencies
+ uses: actions/cache@v3
+ with:
+ path: |
+ ~/.pub-cache
+ **/pubspec.lock
+ key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
+ restore-keys: |
+ ${{ runner.os }}-flutter-
+ 
+ - name: Install dependencies
+ run: flutter pub get
+ 
+ - name: Build Android Release APK
+ run: flutter build apk --release
+ 
+ - name: Upload Release APK
+ uses: actions/upload-artifact@v4
+ with:
+ name: release-apk
+ path: build/app/outputs/flutter-apk/release/app-release.apk
 
-  create_release:
-    runs-on: ubuntu-latest
-    needs: [build_debug, build_release]
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Download Debug APK
-        uses: actions/download-artifact@v3
-        with:
-          name: debug-apk
-          path: artifacts/
-          
-      - name: Download Release APK
-        uses: actions/download-artifact@v3
-        with:
-          name: release-apk
-          path: artifacts/
-          
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            artifacts/app-debug.apk
-            artifacts/app-release.apk
-          release_name: "Release v${{ github.run_number }}"
-          body: |
-            Automatic build from GitHub Actions
-            
-      - name: Create Release Tag
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a v${{ github.run_number }} -m "Release v${{ github.run_number }}"
-          git push origin v${{ github.run_number }}
+ create_release:
+ runs-on: ubuntu-latest
+ needs: [build_debug, build_release]
+ if: github.ref == 'refs/heads/main'
+ 
+ steps:
+ - name: Checkout repository
+ uses: actions/checkout@v4
+ 
+ - name: Download Debug APK
+ uses: actions/download-artifact@v4
+ with:
+ name: debug-apk
+ path: artifacts/
+ 
+ - name: Download Release APK
+ uses: actions/download-artifact@v4
+ with:
+ name: release-apk
+ path: artifacts/
+ 
+ - name: Create GitHub Release
+ uses: softprops/action-gh-release@v1
+ with:
+ files: |
+ artifacts/app-debug.apk
+ artifacts/app-release.apk
+ release_name: "Release v${{ github.run_number }}"
+ body: |
+ Automatic build from GitHub Actions
+ 
+ - name: Create Release Tag
+ run: |
+ git config --global user.name "github-actions[bot]"
+ git config --global user.email "github-actions[bot]@users.noreply.github.com"
+ git tag -a v${{ github.run_number }} -m "Release v${{ github.run_number }}"
+ git push origin v${{ github.run_number }}
