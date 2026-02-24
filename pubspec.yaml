@@ -3,10 +3,11 @@ description: ಮುದ್ದುರಾಮನ ಮನಸು - Simple Verses, Profou
 
 environment:
  flutter: "3.19.3"
+ sdk: '^3.3.0'
 
 dependencies:
  flutter:
-  sdk: flutter
+ sdk: flutter
  google_fonts: ^6.1.0
  provider: ^6.1.1
  shared_preferences: ^2.2.2
@@ -16,7 +17,7 @@ dependencies:
 
 dev_dependencies:
  flutter_test:
-  sdk: flutter
+ sdk: flutter
  flutter_lints: ^3.0.0
 
 publish_to: 'none'
