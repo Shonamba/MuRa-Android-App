@@ -1,41 +1,40 @@
 plugins {
- id "com.android.application"
- id "kotlin-android"
- id "dev.flutter.flutter-gradle-plugin"
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
- namespace "com.example.mura"
- compileSdkVersion flutter.compileSdkVersion
+    namespace "com.mura.app"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
 
- compileOptions {
- sourceCompatibility JavaVersion.VERSION_1_8
- targetCompatibility JavaVersion.VERSION_1_8
- }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 
- kotlinOptions {
- jvmTarget = '1.8'
- }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 
- defaultConfig {
- applicationId "com.example.mura"
- minSdk flutter.minSdkVersion
- targetSdk flutter.targetSdkVersion
- versionCode flutterVersionCode.toInteger()
- versionName flutterVersionName
- }
+    defaultConfig {
+        applicationId "com.mura.app"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
 
- buildTypes {
- release {
- signingConfig signingConfigs.debug
- }
- }
-
- sourceSets {
- main.java.srcDirs += 'src/main/kotlin'
- }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
+        }
+    }
 }
 
 flutter {
- source "../.."
+    source '../..'
 }
