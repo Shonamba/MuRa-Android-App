@@ -117,6 +117,12 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
     final textColor = isDark ? const Color(0xFFFFF0D0) : const Color(0xFF2C1A00);
     final subtleColor = isDark ? const Color(0xFF7A6040) : const Color(0xFFAA8040);
 
+    // Responsive font sizes based on screen width
+    final screenWidth = MediaQuery.of(context).size.width;
+    final kannadadFontSize = screenWidth < 360 ? 17.0 : screenWidth < 400 ? 19.0 : 22.0;
+    final transliterationFontSize = screenWidth < 360 ? 11.0 : 13.0;
+    final englishFontSize = screenWidth < 360 ? 13.0 : 15.0;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -142,7 +148,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
           // Main Kannada verse card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(28),
+            padding: const EdgeInsets.all(24), // FIXED: reduced from 28 to give text more room
             decoration: BoxDecoration(
               color: cardColor,
               borderRadius: BorderRadius.circular(24),
@@ -185,32 +191,42 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Kannada text
-                Text(
-                  verse.kannada,
-                  style: GoogleFonts.tiroKannada(
-                    fontSize: 22,
-                    height: 2.0,
-                    color: textColor,
-                    fontWeight: FontWeight.w500,
+                // Kannada text — FIXED: softWrap, visible overflow, responsive size, constrained width
+                SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    verse.kannada,
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.tiroKannada(
+                      fontSize: kannadadFontSize,
+                      height: 2.0,
+                      color: textColor,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
                 ),
 
                 const SizedBox(height: 20),
                 Divider(color: accentColor.withOpacity(0.2), thickness: 1),
                 const SizedBox(height: 16),
 
-                // Transliteration
-                Text(
-                  verse.transliteration,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    height: 1.8,
-                    color: subtleColor,
-                    fontStyle: FontStyle.italic,
+                // Transliteration — FIXED: softWrap, visible overflow, responsive size
+                SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    verse.transliteration,
+                    softWrap: true,
+                    overflow: TextOverflow.visible,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: transliterationFontSize,
+                      height: 1.8,
+                      color: subtleColor,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -255,15 +271,21 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                   ),
                   if (_showEnglish) ...[
                     const SizedBox(height: 16),
-                    Text(
-                      verse.english,
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        height: 1.8,
-                        color: textColor,
-                        fontStyle: FontStyle.italic,
+                    // English text — FIXED: softWrap, visible overflow, responsive size
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        verse.english,
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: englishFontSize,
+                          height: 1.8,
+                          color: textColor,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ],
