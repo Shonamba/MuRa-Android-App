@@ -20,6 +20,10 @@ class VerseCard extends StatelessWidget {
     final textColor = isDark ? const Color(0xFFFFF0D0) : const Color(0xFF2C1A00);
     final subtleColor = isDark ? const Color(0xFF7A6040) : const Color(0xFFAA8040);
 
+    // Responsive font size based on screen width
+    final screenWidth = MediaQuery.of(context).size.width;
+    final kannadadFontSize = screenWidth < 360 ? 14.0 : screenWidth < 400 ? 15.0 : 17.0;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -59,12 +63,15 @@ class VerseCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  // Category
-                  Text(
-                    verse.category.split(' ').first,
-                    style: GoogleFonts.tiroKannada(
-                      fontSize: 11,
-                      color: subtleColor,
+                  // Category — FIXED: wrapped in Flexible to prevent row overflow
+                  Flexible(
+                    child: Text(
+                      verse.category.split(' ').first,
+                      style: GoogleFonts.tiroKannada(
+                        fontSize: 11,
+                        color: subtleColor,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -89,16 +96,19 @@ class VerseCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Kannada verse preview (first line)
-              Text(
-                verse.kannada,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.tiroKannada(
-                  fontSize: 17,
-                  height: 1.9,
-                  color: textColor,
-                  fontWeight: FontWeight.w500,
+              // Kannada verse — FIXED: removed maxLines+ellipsis, added softWrap+constrained width+responsive size
+              SizedBox(
+                width: double.infinity,
+                child: Text(
+                  verse.kannada,
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                  style: GoogleFonts.tiroKannada(
+                    fontSize: kannadadFontSize,
+                    height: 1.9,
+                    color: textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
 
