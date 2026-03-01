@@ -144,7 +144,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Main Kannada verse card — unchanged except text widgets
+          // Main Kannada verse card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -160,7 +160,9 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
               ],
               border: Border.all(color: accentColor.withOpacity(0.15)),
             ),
+            // FIX 1: crossAxisAlignment.start so children stretch to full card width
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Decorative top line — unchanged
                 Row(
@@ -190,19 +192,24 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // CHANGED: one Text widget per JSON line instead of one joined string
+                // Kannada lines
+                // FIX 2: SizedBox(width: double.infinity) constrains each line to card width
+                // FIX 3: textAlign: TextAlign.left (was center)
                 ...verse.kannadaLines.map((line) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    line,
-                    softWrap: true,
-                    overflow: TextOverflow.visible,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.tiroKannada(
-                      fontSize: kannadadFontSize,
-                      height: 1.85,
-                      color: textColor,
-                      fontWeight: FontWeight.w500,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      line,
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
+                      textAlign: TextAlign.left,
+                      style: GoogleFonts.tiroKannada(
+                        fontSize: kannadadFontSize,
+                        height: 1.85,
+                        color: textColor,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 )),
@@ -211,19 +218,22 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 Divider(color: accentColor.withOpacity(0.2), thickness: 1),
                 const SizedBox(height: 16),
 
-                // CHANGED: one Text widget per JSON line instead of one joined string
+                // Transliteration lines — same 3 fixes
                 ...verse.transliterationLines.map((line) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    line,
-                    softWrap: true,
-                    overflow: TextOverflow.visible,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: transliterationFontSize,
-                      height: 1.8,
-                      color: subtleColor,
-                      fontStyle: FontStyle.italic,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      line,
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
+                      textAlign: TextAlign.left,
+                      style: GoogleFonts.poppins(
+                        fontSize: transliterationFontSize,
+                        height: 1.8,
+                        color: subtleColor,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
                 )),
@@ -233,7 +243,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
 
           const SizedBox(height: 16),
 
-          // English translation card — unchanged except text widget
+          // English translation card
           GestureDetector(
             onTap: () => setState(() => _showEnglish = !_showEnglish),
             child: AnimatedContainer(
@@ -245,7 +255,9 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: accentColor.withOpacity(0.2)),
               ),
+              // FIX 1 applied here too
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -270,19 +282,22 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                   ),
                   if (_showEnglish) ...[
                     const SizedBox(height: 16),
-                    // CHANGED: one Text widget per JSON line instead of one joined string
+                    // English lines — same 3 fixes
                     ...verse.englishLines.map((line) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        line,
-                        softWrap: true,
-                        overflow: TextOverflow.visible,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
-                          fontSize: englishFontSize,
-                          height: 1.8,
-                          color: textColor,
-                          fontStyle: FontStyle.italic,
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: Text(
+                          line,
+                          softWrap: true,
+                          overflow: TextOverflow.visible,
+                          textAlign: TextAlign.left,
+                          style: GoogleFonts.poppins(
+                            fontSize: englishFontSize,
+                            height: 1.8,
+                            color: textColor,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     )),
