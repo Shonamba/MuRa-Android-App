@@ -22,7 +22,7 @@ class VerseLine {
       verseNumber: (json['verse_number'] as num).toDouble(),
       lineNumber: (json['line_number'] as num).toDouble(),
       chapter: json['chapter'] ?? '',
-      // trim() strips the trailing spaces present in raw JSON values
+      // trim() removes trailing spaces present in raw JSON values
       kannadaOriginal: (json['kannada_original'] ?? '').trim(),
       englishTransliteration: (json['english_transliteration'] ?? '').trim(),
       englishTranslation: (json['english_translation'] ?? '').trim(),
@@ -40,7 +40,7 @@ class Verse {
   final String category;
   final List<VerseLine> lines;
 
-  // Structured line-by-line access for detail screen display
+  // Line-by-line getters — used by detail screen to render each line separately
   List<String> get kannadaLines =>
       lines.map((l) => l.kannadaOriginal).where((s) => s.isNotEmpty).toList();
 
@@ -65,7 +65,6 @@ class Verse {
     final id = lines.first.verseNumber.toInt();
     final chapter = lines.first.chapter.replaceAll('_', ' ');
 
-    // Each line on its own row, trimmed, empty lines excluded
     final kannada = lines
         .map((l) => l.kannadaOriginal)
         .where((s) => s.isNotEmpty)
