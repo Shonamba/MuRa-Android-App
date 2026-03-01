@@ -8,7 +8,7 @@ class VerseRepository {
       'https://hangyoicream.github.io/MuRa-Web-App/data';
 
   // How many verse JSON files exist — update this as you add more
-  static const int _totalVerses = 10;
+  static const int _totalVerses = 1000;
 
   /// Fetches all verses from verse_1.0.json ... verse_N.0.json
   static Future<List<Verse>> fetchAllVerses() async {
