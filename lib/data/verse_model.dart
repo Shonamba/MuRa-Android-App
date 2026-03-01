@@ -22,9 +22,10 @@ class VerseLine {
       verseNumber: (json['verse_number'] as num).toDouble(),
       lineNumber: (json['line_number'] as num).toDouble(),
       chapter: json['chapter'] ?? '',
-      kannadaOriginal: json['kannada_original'] ?? '',
-      englishTransliteration: json['english_transliteration'] ?? '',
-      englishTranslation: json['english_translation'] ?? '',
+      // trim() strips the trailing spaces present in raw JSON values
+      kannadaOriginal: (json['kannada_original'] ?? '').trim(),
+      englishTransliteration: (json['english_transliteration'] ?? '').trim(),
+      englishTranslation: (json['english_translation'] ?? '').trim(),
       tags: json['tags'] ?? '',
     );
   }
@@ -33,11 +34,21 @@ class VerseLine {
 class Verse {
   final int id;
   final String chapter;
-  final String kannada;       // all lines joined
+  final String kannada;
   final String transliteration;
   final String english;
   final String category;
   final List<VerseLine> lines;
+
+  // Structured line-by-line access for detail screen display
+  List<String> get kannadaLines =>
+      lines.map((l) => l.kannadaOriginal).where((s) => s.isNotEmpty).toList();
+
+  List<String> get transliterationLines =>
+      lines.map((l) => l.englishTransliteration).where((s) => s.isNotEmpty).toList();
+
+  List<String> get englishLines =>
+      lines.map((l) => l.englishTranslation).where((s) => s.isNotEmpty).toList();
 
   const Verse({
     required this.id,
@@ -49,24 +60,24 @@ class Verse {
     required this.lines,
   });
 
-  /// Build a Verse from a list of VerseLine (one JSON file = one verse)
   factory Verse.fromLines(List<VerseLine> lines) {
     assert(lines.isNotEmpty);
     final id = lines.first.verseNumber.toInt();
     final chapter = lines.first.chapter.replaceAll('_', ' ');
 
+    // Each line on its own row, trimmed, empty lines excluded
     final kannada = lines
-        .map((l) => l.kannadaOriginal.trim())
+        .map((l) => l.kannadaOriginal)
         .where((s) => s.isNotEmpty)
         .join('\n');
 
     final transliteration = lines
-        .map((l) => l.englishTransliteration.trim())
+        .map((l) => l.englishTransliteration)
         .where((s) => s.isNotEmpty)
         .join('\n');
 
     final english = lines
-        .map((l) => l.englishTranslation.trim())
+        .map((l) => l.englishTranslation)
         .where((s) => s.isNotEmpty)
         .join('\n');
 
