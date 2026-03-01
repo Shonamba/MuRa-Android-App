@@ -117,7 +117,6 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
     final textColor = isDark ? const Color(0xFFFFF0D0) : const Color(0xFF2C1A00);
     final subtleColor = isDark ? const Color(0xFF7A6040) : const Color(0xFFAA8040);
 
-    // Responsive font sizes based on screen width
     final screenWidth = MediaQuery.of(context).size.width;
     final kannadadFontSize = screenWidth < 360 ? 17.0 : screenWidth < 400 ? 19.0 : 22.0;
     final transliterationFontSize = screenWidth < 360 ? 11.0 : 13.0;
@@ -127,7 +126,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          // Category badge
+          // Category badge — unchanged
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
@@ -145,10 +144,10 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Main Kannada verse card
+          // Main Kannada verse card — unchanged except text widgets
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24), // FIXED: reduced from 28 to give text more room
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: cardColor,
               borderRadius: BorderRadius.circular(24),
@@ -163,7 +162,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
             ),
             child: Column(
               children: [
-                // Decorative top line
+                // Decorative top line — unchanged
                 Row(
                   children: [
                     Expanded(
@@ -180,7 +179,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Verse number
+                // Verse number — unchanged
                 Text(
                   '${verse.id}',
                   style: GoogleFonts.poppins(
@@ -191,32 +190,32 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Kannada text — FIXED: softWrap, visible overflow, responsive size, constrained width
-                SizedBox(
-                  width: double.infinity,
+                // CHANGED: one Text widget per JSON line instead of one joined string
+                ...verse.kannadaLines.map((line) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    verse.kannada,
+                    line,
                     softWrap: true,
                     overflow: TextOverflow.visible,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.tiroKannada(
                       fontSize: kannadadFontSize,
-                      height: 2.0,
+                      height: 1.85,
                       color: textColor,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                ),
+                )),
 
                 const SizedBox(height: 20),
                 Divider(color: accentColor.withOpacity(0.2), thickness: 1),
                 const SizedBox(height: 16),
 
-                // Transliteration — FIXED: softWrap, visible overflow, responsive size
-                SizedBox(
-                  width: double.infinity,
+                // CHANGED: one Text widget per JSON line instead of one joined string
+                ...verse.transliterationLines.map((line) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    verse.transliteration,
+                    line,
                     softWrap: true,
                     overflow: TextOverflow.visible,
                     textAlign: TextAlign.center,
@@ -227,14 +226,14 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                       fontStyle: FontStyle.italic,
                     ),
                   ),
-                ),
+                )),
               ],
             ),
           ),
 
           const SizedBox(height: 16),
 
-          // English translation card
+          // English translation card — unchanged except text widget
           GestureDetector(
             onTap: () => setState(() => _showEnglish = !_showEnglish),
             child: AnimatedContainer(
@@ -271,11 +270,11 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                   ),
                   if (_showEnglish) ...[
                     const SizedBox(height: 16),
-                    // English text — FIXED: softWrap, visible overflow, responsive size
-                    SizedBox(
-                      width: double.infinity,
+                    // CHANGED: one Text widget per JSON line instead of one joined string
+                    ...verse.englishLines.map((line) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
-                        verse.english,
+                        line,
                         softWrap: true,
                         overflow: TextOverflow.visible,
                         textAlign: TextAlign.center,
@@ -286,7 +285,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                           fontStyle: FontStyle.italic,
                         ),
                       ),
-                    ),
+                    )),
                   ],
                 ],
               ),
@@ -295,7 +294,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
 
           const SizedBox(height: 24),
 
-          // Copy button
+          // Copy button — unchanged
           OutlinedButton.icon(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: verse.kannada));
@@ -331,7 +330,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
 
           const SizedBox(height: 32),
 
-          // Swipe hint
+          // Swipe hint — unchanged
           Text(
             '← ← ಸ್ವೈಪ್ ಮಾಡಿ → →',
             style: GoogleFonts.poppins(
