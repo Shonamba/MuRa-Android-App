@@ -46,6 +46,46 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
     Share.share(text);
   }
 
+  /// Measures all lines at [maxFontSize] and returns the font size that makes
+  /// the LONGEST line fit within [availableWidth]. All lines then share this size.
+  double _uniformFontSize({
+    required List<String> lines,
+    required double availableWidth,
+    required double maxFontSize,
+    required double minFontSize,
+    required TextStyle baseStyle,
+  }) {
+    double fontSize = maxFontSize;
+
+    for (final line in lines) {
+      if (line.isEmpty) continue;
+
+      // Binary-search the right font size for this line
+      double lo = minFontSize;
+      double hi = maxFontSize;
+
+      while (hi - lo > 0.5) {
+        final mid = (lo + hi) / 2;
+        final tp = TextPainter(
+          text: TextSpan(text: line, style: baseStyle.copyWith(fontSize: mid)),
+          maxLines: 1,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: double.infinity);
+
+        if (tp.width <= availableWidth) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+
+      // The fitting size for this line is lo — track the smallest across all lines
+      if (lo < fontSize) fontSize = lo;
+    }
+
+    return fontSize.clamp(minFontSize, maxFontSize);
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
@@ -105,7 +145,6 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
         onPageChanged: (i) => setState(() => _currentIndex = i),
         itemBuilder: (context, index) {
           final verse = widget.verseList[index];
-          // LayoutBuilder gives us the real constrained width inside the PageView
           return LayoutBuilder(
             builder: (context, constraints) {
               return _buildVersePage(context, verse, isDark, constraints.maxWidth);
@@ -122,50 +161,64 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
     final textColor = isDark ? const Color(0xFFFFF0D0) : const Color(0xFF2C1A00);
     final subtleColor = isDark ? const Color(0xFF7A6040) : const Color(0xFFAA8040);
 
-    // Responsive font sizes
-    final kannadadFontSize = pageWidth < 360 ? 17.0 : pageWidth < 400 ? 19.0 : 22.0;
-    final transliterationFontSize = pageWidth < 360 ? 11.0 : 13.0;
-    final englishFontSize = pageWidth < 360 ? 13.0 : 15.0;
+    // Exact usable width inside each container
+    final cardTextWidth = pageWidth - 40 - 48 - 2; // screen pad + card pad + border
+    final englishTextWidth = pageWidth - 40 - 40;   // screen pad + english card pad
 
-    // Exact usable text width inside the card:
-    // pageWidth - screen padding (20*2) - card padding (24*2) - card border (1*2)
-    final cardTextWidth = pageWidth - 40 - 48 - 2;
+    // Base styles (fontSize is placeholder — overridden below)
+    final kannadaBase = GoogleFonts.tiroKannada(
+      height: 1.6,
+      color: textColor,
+      fontWeight: FontWeight.w500,
+    );
+    final translitBase = GoogleFonts.poppins(
+      height: 1.6,
+      color: subtleColor,
+      fontStyle: FontStyle.italic,
+    );
+    final englishBase = GoogleFonts.poppins(
+      height: 1.7,
+      color: textColor,
+      fontStyle: FontStyle.italic,
+    );
 
-    // Helper: renders lines left-aligned, each constrained to exact card text width
-    Widget lineBlock(List<String> lines, TextStyle style) {
+    // Compute ONE font size per block — dictated by the longest line in each block
+    final kannadaFontSize = _uniformFontSize(
+      lines: verse.kannadaLines,
+      availableWidth: cardTextWidth,
+      maxFontSize: 20,
+      minFontSize: 11,
+      baseStyle: kannadaBase,
+    );
+
+    final translitFontSize = _uniformFontSize(
+      lines: verse.transliterationLines,
+      availableWidth: cardTextWidth,
+      maxFontSize: 15,
+      minFontSize: 9,
+      baseStyle: translitBase,
+    );
+
+    final englishFontSize = _uniformFontSize(
+      lines: verse.englishLines,
+      availableWidth: englishTextWidth,
+      maxFontSize: 15,
+      minFontSize: 9,
+      baseStyle: englishBase,
+    );
+
+    // Renders all lines at the same computed size — uniform, no per-line scaling
+    Widget lineBlock(List<String> lines, double width, TextStyle style) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: lines.map((line) => Padding(
-          padding: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.only(bottom: 8),
           child: SizedBox(
-            width: cardTextWidth,
+            width: width,
             child: Text(
               line,
-              softWrap: true,
+              maxLines: 1,
               overflow: TextOverflow.visible,
-              textAlign: TextAlign.left,
-              style: style,
-            ),
-          ),
-        )).toList(),
-      );
-    }
-
-    // For English card: page padding (20*2) + english card padding (20*2)
-    final englishTextWidth = pageWidth - 40 - 40;
-
-    Widget englishLineBlock(List<String> lines, TextStyle style) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: lines.map((line) => Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: SizedBox(
-            width: englishTextWidth,
-            child: Text(
-              line,
-              softWrap: true,
-              overflow: TextOverflow.visible,
-              textAlign: TextAlign.left,
               style: style,
             ),
           ),
@@ -189,16 +242,13 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
               ),
               child: Text(
                 verse.category,
-                style: GoogleFonts.tiroKannada(
-                  fontSize: 13,
-                  color: accentColor,
-                ),
+                style: GoogleFonts.tiroKannada(fontSize: 13, color: accentColor),
               ),
             ),
           ),
           const SizedBox(height: 24),
 
-          // Main Kannada verse card
+          // Main verse card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
@@ -220,16 +270,12 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 // Decorative top line
                 Row(
                   children: [
-                    Expanded(
-                      child: Divider(color: accentColor.withOpacity(0.3), thickness: 1),
-                    ),
+                    Expanded(child: Divider(color: accentColor.withOpacity(0.3), thickness: 1)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text('❧', style: TextStyle(color: accentColor, fontSize: 18)),
                     ),
-                    Expanded(
-                      child: Divider(color: accentColor.withOpacity(0.3), thickness: 1),
-                    ),
+                    Expanded(child: Divider(color: accentColor.withOpacity(0.3), thickness: 1)),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -237,38 +283,26 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 // Verse number
                 Text(
                   '${verse.id}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: subtleColor,
-                    letterSpacing: 1,
-                  ),
+                  style: GoogleFonts.poppins(fontSize: 11, color: subtleColor, letterSpacing: 1),
                 ),
                 const SizedBox(height: 16),
 
-                // Kannada — each line width-clamped to cardTextWidth
+                // Kannada — all 4 lines at same kannadaFontSize
                 lineBlock(
                   verse.kannadaLines,
-                  GoogleFonts.tiroKannada(
-                    fontSize: kannadadFontSize,
-                    height: 1.85,
-                    color: textColor,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  cardTextWidth,
+                  kannadaBase.copyWith(fontSize: kannadaFontSize),
                 ),
 
                 const SizedBox(height: 20),
                 Divider(color: accentColor.withOpacity(0.2), thickness: 1),
                 const SizedBox(height: 16),
 
-                // Transliteration — each line width-clamped to cardTextWidth
+                // Transliteration — all lines at same translitFontSize
                 lineBlock(
                   verse.transliterationLines,
-                  GoogleFonts.poppins(
-                    fontSize: transliterationFontSize,
-                    height: 1.8,
-                    color: subtleColor,
-                    fontStyle: FontStyle.italic,
-                  ),
+                  cardTextWidth,
+                  translitBase.copyWith(fontSize: translitFontSize),
                 ),
               ],
             ),
@@ -295,9 +329,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        _showEnglish
-                            ? Icons.keyboard_arrow_up
-                            : Icons.translate_rounded,
+                        _showEnglish ? Icons.keyboard_arrow_up : Icons.translate_rounded,
                         color: accentColor,
                         size: 18,
                       ),
@@ -314,15 +346,11 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                   ),
                   if (_showEnglish) ...[
                     const SizedBox(height: 16),
-                    // English — each line width-clamped to englishTextWidth
-                    englishLineBlock(
+                    // English — all lines at same englishFontSize
+                    lineBlock(
                       verse.englishLines,
-                      GoogleFonts.poppins(
-                        fontSize: englishFontSize,
-                        height: 1.8,
-                        color: textColor,
-                        fontStyle: FontStyle.italic,
-                      ),
+                      englishTextWidth,
+                      englishBase.copyWith(fontSize: englishFontSize),
                     ),
                   ],
                 ],
@@ -346,23 +374,16 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                     backgroundColor: const Color(0xFFFF9933),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 );
               },
               icon: const Icon(Icons.copy_rounded, size: 16),
-              label: Text(
-                'ನಕಲಿಸಿ (Copy)',
-                style: GoogleFonts.tiroKannada(fontSize: 14),
-              ),
+              label: Text('ನಕಲಿಸಿ (Copy)', style: GoogleFonts.tiroKannada(fontSize: 14)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: accentColor,
                 side: BorderSide(color: accentColor.withOpacity(0.4)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
