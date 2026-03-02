@@ -105,40 +105,94 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
         onPageChanged: (i) => setState(() => _currentIndex = i),
         itemBuilder: (context, index) {
           final verse = widget.verseList[index];
-          return _buildVersePage(context, verse, isDark);
+          // LayoutBuilder gives us the real constrained width inside the PageView
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return _buildVersePage(context, verse, isDark, constraints.maxWidth);
+            },
+          );
         },
       ),
     );
   }
 
-  Widget _buildVersePage(BuildContext context, Verse verse, bool isDark) {
+  Widget _buildVersePage(BuildContext context, Verse verse, bool isDark, double pageWidth) {
     final cardColor = isDark ? const Color(0xFF2A1E0F) : Colors.white;
     final accentColor = const Color(0xFFFF9933);
     final textColor = isDark ? const Color(0xFFFFF0D0) : const Color(0xFF2C1A00);
     final subtleColor = isDark ? const Color(0xFF7A6040) : const Color(0xFFAA8040);
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final kannadadFontSize = screenWidth < 360 ? 17.0 : screenWidth < 400 ? 19.0 : 22.0;
-    final transliterationFontSize = screenWidth < 360 ? 11.0 : 13.0;
-    final englishFontSize = screenWidth < 360 ? 13.0 : 15.0;
+    // Responsive font sizes
+    final kannadadFontSize = pageWidth < 360 ? 17.0 : pageWidth < 400 ? 19.0 : 22.0;
+    final transliterationFontSize = pageWidth < 360 ? 11.0 : 13.0;
+    final englishFontSize = pageWidth < 360 ? 13.0 : 15.0;
+
+    // Exact usable text width inside the card:
+    // pageWidth - screen padding (20*2) - card padding (24*2) - card border (1*2)
+    final cardTextWidth = pageWidth - 40 - 48 - 2;
+
+    // Helper: renders lines left-aligned, each constrained to exact card text width
+    Widget lineBlock(List<String> lines, TextStyle style) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: lines.map((line) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: SizedBox(
+            width: cardTextWidth,
+            child: Text(
+              line,
+              softWrap: true,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.left,
+              style: style,
+            ),
+          ),
+        )).toList(),
+      );
+    }
+
+    // For English card: page padding (20*2) + english card padding (20*2)
+    final englishTextWidth = pageWidth - 40 - 40;
+
+    Widget englishLineBlock(List<String> lines, TextStyle style) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: lines.map((line) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: SizedBox(
+            width: englishTextWidth,
+            child: Text(
+              line,
+              softWrap: true,
+              overflow: TextOverflow.visible,
+              textAlign: TextAlign.left,
+              style: style,
+            ),
+          ),
+        )).toList(),
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category badge — unchanged
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: accentColor.withOpacity(0.3)),
-            ),
-            child: Text(
-              verse.category,
-              style: GoogleFonts.tiroKannada(
-                fontSize: 13,
-                color: accentColor,
+          // Category badge
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: accentColor.withOpacity(0.3)),
+              ),
+              child: Text(
+                verse.category,
+                style: GoogleFonts.tiroKannada(
+                  fontSize: 13,
+                  color: accentColor,
+                ),
               ),
             ),
           ),
@@ -160,11 +214,10 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
               ],
               border: Border.all(color: accentColor.withOpacity(0.15)),
             ),
-            // FIX 1: crossAxisAlignment.start so children stretch to full card width
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Decorative top line — unchanged
+                // Decorative top line
                 Row(
                   children: [
                     Expanded(
@@ -181,7 +234,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Verse number — unchanged
+                // Verse number
                 Text(
                   '${verse.id}',
                   style: GoogleFonts.poppins(
@@ -192,51 +245,31 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Kannada lines
-                // FIX 2: SizedBox(width: double.infinity) constrains each line to card width
-                // FIX 3: textAlign: TextAlign.left (was center)
-                ...verse.kannadaLines.map((line) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      line,
-                      softWrap: true,
-                      overflow: TextOverflow.visible,
-                      textAlign: TextAlign.left,
-                      style: GoogleFonts.tiroKannada(
-                        fontSize: kannadadFontSize,
-                        height: 1.85,
-                        color: textColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                // Kannada — each line width-clamped to cardTextWidth
+                lineBlock(
+                  verse.kannadaLines,
+                  GoogleFonts.tiroKannada(
+                    fontSize: kannadadFontSize,
+                    height: 1.85,
+                    color: textColor,
+                    fontWeight: FontWeight.w500,
                   ),
-                )),
+                ),
 
                 const SizedBox(height: 20),
                 Divider(color: accentColor.withOpacity(0.2), thickness: 1),
                 const SizedBox(height: 16),
 
-                // Transliteration lines — same 3 fixes
-                ...verse.transliterationLines.map((line) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: Text(
-                      line,
-                      softWrap: true,
-                      overflow: TextOverflow.visible,
-                      textAlign: TextAlign.left,
-                      style: GoogleFonts.poppins(
-                        fontSize: transliterationFontSize,
-                        height: 1.8,
-                        color: subtleColor,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
+                // Transliteration — each line width-clamped to cardTextWidth
+                lineBlock(
+                  verse.transliterationLines,
+                  GoogleFonts.poppins(
+                    fontSize: transliterationFontSize,
+                    height: 1.8,
+                    color: subtleColor,
+                    fontStyle: FontStyle.italic,
                   ),
-                )),
+                ),
               ],
             ),
           ),
@@ -255,7 +288,6 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: accentColor.withOpacity(0.2)),
               ),
-              // FIX 1 applied here too
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -282,25 +314,16 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                   ),
                   if (_showEnglish) ...[
                     const SizedBox(height: 16),
-                    // English lines — same 3 fixes
-                    ...verse.englishLines.map((line) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Text(
-                          line,
-                          softWrap: true,
-                          overflow: TextOverflow.visible,
-                          textAlign: TextAlign.left,
-                          style: GoogleFonts.poppins(
-                            fontSize: englishFontSize,
-                            height: 1.8,
-                            color: textColor,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        ),
+                    // English — each line width-clamped to englishTextWidth
+                    englishLineBlock(
+                      verse.englishLines,
+                      GoogleFonts.poppins(
+                        fontSize: englishFontSize,
+                        height: 1.8,
+                        color: textColor,
+                        fontStyle: FontStyle.italic,
                       ),
-                    )),
+                    ),
                   ],
                 ],
               ),
@@ -309,49 +332,53 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
 
           const SizedBox(height: 24),
 
-          // Copy button — unchanged
-          OutlinedButton.icon(
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: verse.kannada));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'ಪದ್ಯ ನಕಲಿಸಲಾಗಿದೆ!',
-                    style: GoogleFonts.tiroKannada(fontSize: 14),
+          // Copy button
+          Center(
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: verse.kannada));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'ಪದ್ಯ ನಕಲಿಸಲಾಗಿದೆ!',
+                      style: GoogleFonts.tiroKannada(fontSize: 14),
+                    ),
+                    backgroundColor: const Color(0xFFFF9933),
+                    duration: const Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  backgroundColor: const Color(0xFFFF9933),
-                  duration: const Duration(seconds: 2),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.copy_rounded, size: 16),
-            label: Text(
-              'ನಕಲಿಸಿ (Copy)',
-              style: GoogleFonts.tiroKannada(fontSize: 14),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: accentColor,
-              side: BorderSide(color: accentColor.withOpacity(0.4)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                );
+              },
+              icon: const Icon(Icons.copy_rounded, size: 16),
+              label: Text(
+                'ನಕಲಿಸಿ (Copy)',
+                style: GoogleFonts.tiroKannada(fontSize: 14),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: accentColor,
+                side: BorderSide(color: accentColor.withOpacity(0.4)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
             ),
           ),
 
           const SizedBox(height: 32),
 
-          // Swipe hint — unchanged
-          Text(
-            '← ← ಸ್ವೈಪ್ ಮಾಡಿ → →',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
-              color: subtleColor.withOpacity(0.5),
-              letterSpacing: 1,
+          // Swipe hint
+          Center(
+            child: Text(
+              '← ← ಸ್ವೈಪ್ ಮಾಡಿ → →',
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: subtleColor.withOpacity(0.5),
+                letterSpacing: 1,
+              ),
             ),
           ),
           const SizedBox(height: 40),
