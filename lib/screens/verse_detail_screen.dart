@@ -46,8 +46,11 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
     Share.share(text);
   }
 
-  /// Measures all lines at [maxFontSize] and returns the font size that makes
-  /// the LONGEST line fit within [availableWidth]. All lines then share this size.
+  /// Returns one font size that makes EVERY line in [lines] fit within
+  /// [availableWidth] when rendered with [baseStyle].
+  /// Uses binary search per line; the longest line wins (smallest result).
+  /// A 4px safety margin is subtracted from availableWidth to account for
+  /// sub-pixel rounding differences between TextPainter and Flutter's renderer.
   double _uniformFontSize({
     required List<String> lines,
     required double availableWidth,
@@ -55,35 +58,35 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
     required double minFontSize,
     required TextStyle baseStyle,
   }) {
-    double fontSize = maxFontSize;
+    // Safety margin: TextPainter can be ~2-4px off from actual render width
+    final measureWidth = availableWidth - 4;
+    double result = maxFontSize;
 
     for (final line in lines) {
       if (line.isEmpty) continue;
 
-      // Binary-search the right font size for this line
       double lo = minFontSize;
       double hi = maxFontSize;
 
-      while (hi - lo > 0.5) {
+      while (hi - lo > 0.2) {
         final mid = (lo + hi) / 2;
         final tp = TextPainter(
           text: TextSpan(text: line, style: baseStyle.copyWith(fontSize: mid)),
           maxLines: 1,
           textDirection: TextDirection.ltr,
-        )..layout(maxWidth: double.infinity);
+        )..layout(maxWidth: double.infinity); // unconstrained = true natural width
 
-        if (tp.width <= availableWidth) {
+        if (tp.width <= measureWidth) {
           lo = mid;
         } else {
           hi = mid;
         }
       }
 
-      // The fitting size for this line is lo — track the smallest across all lines
-      if (lo < fontSize) fontSize = lo;
+      if (lo < result) result = lo;
     }
 
-    return fontSize.clamp(minFontSize, maxFontSize);
+    return result.clamp(minFontSize, maxFontSize);
   }
 
   @override
@@ -161,18 +164,18 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
     final textColor = isDark ? const Color(0xFFFFF0D0) : const Color(0xFF2C1A00);
     final subtleColor = isDark ? const Color(0xFF7A6040) : const Color(0xFFAA8040);
 
-    // Exact usable width inside each container
-    final cardTextWidth = pageWidth - 40 - 48 - 2; // screen pad + card pad + border
-    final englishTextWidth = pageWidth - 40 - 40;   // screen pad + english card pad
+    // Exact pixel width for text inside each container
+    final cardTextWidth = pageWidth - 40 - 48 - 2; // screen(20*2) + card(24*2) + border(1*2)
+    final englishTextWidth = pageWidth - 40 - 40;   // screen(20*2) + card(20*2)
 
-    // Base styles (fontSize is placeholder — overridden below)
+    // Base styles — fontSize applied after measurement
     final kannadaBase = GoogleFonts.tiroKannada(
-      height: 1.6,
+      height: 1.7,
       color: textColor,
       fontWeight: FontWeight.w500,
     );
     final translitBase = GoogleFonts.poppins(
-      height: 1.6,
+      height: 1.7,
       color: subtleColor,
       fontStyle: FontStyle.italic,
     );
@@ -182,7 +185,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
       fontStyle: FontStyle.italic,
     );
 
-    // Compute ONE font size per block — dictated by the longest line in each block
+    // One shared font size per block — longest line dictates, all lines use it
     final kannadaFontSize = _uniformFontSize(
       lines: verse.kannadaLines,
       availableWidth: cardTextWidth,
@@ -190,7 +193,6 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
       minFontSize: 11,
       baseStyle: kannadaBase,
     );
-
     final translitFontSize = _uniformFontSize(
       lines: verse.transliterationLines,
       availableWidth: cardTextWidth,
@@ -198,7 +200,6 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
       minFontSize: 9,
       baseStyle: translitBase,
     );
-
     final englishFontSize = _uniformFontSize(
       lines: verse.englishLines,
       availableWidth: englishTextWidth,
@@ -207,7 +208,9 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
       baseStyle: englishBase,
     );
 
-    // Renders all lines at the same computed size — uniform, no per-line scaling
+    // softWrap: false  → Flutter never attempts to wrap
+    // overflow: visible → text beyond SizedBox boundary shows (safety net only;
+    //                     measurement guarantees nothing actually overflows)
     Widget lineBlock(List<String> lines, double width, TextStyle style) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,7 +220,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
             width: width,
             child: Text(
               line,
-              maxLines: 1,
+              softWrap: false,
               overflow: TextOverflow.visible,
               style: style,
             ),
@@ -287,7 +290,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Kannada — all 4 lines at same kannadaFontSize
+                // Kannada — uniform size, no wrap, no clip
                 lineBlock(
                   verse.kannadaLines,
                   cardTextWidth,
@@ -298,7 +301,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                 Divider(color: accentColor.withOpacity(0.2), thickness: 1),
                 const SizedBox(height: 16),
 
-                // Transliteration — all lines at same translitFontSize
+                // Transliteration — uniform size, no wrap, no clip
                 lineBlock(
                   verse.transliterationLines,
                   cardTextWidth,
@@ -346,7 +349,7 @@ class _VerseDetailScreenState extends State<VerseDetailScreen> {
                   ),
                   if (_showEnglish) ...[
                     const SizedBox(height: 16),
-                    // English — all lines at same englishFontSize
+                    // English — uniform size, no wrap, no clip
                     lineBlock(
                       verse.englishLines,
                       englishTextWidth,
